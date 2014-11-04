@@ -45,6 +45,7 @@ try {
     println "[${getCurrent()}] import ${f}";
     String data = f.getText("UTF-8");
     doPostProcess("${solrURL}/${collectionName}/update", 60*1000, 180*1000, data);
+    doPostProcess("${solrURL}/${collectionName}/update", 60*1000, 180*1000, '{"commit": {"softCommit": false}}');
   }
 
   println "solr import finished!"
