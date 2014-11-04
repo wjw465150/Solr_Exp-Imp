@@ -28,7 +28,7 @@ def collectionName=opt.c;
 def expFile = opt.f;
 expFile = (new File(expFile)).canonicalPath;
 def destPath = (new File(expFile)).parentFile.canonicalPath;
-destPath=destPath+"/solr_tmp"
+destPath=destPath+"/solr_imp_tmp"
 
 //开始获取
 try {
@@ -41,7 +41,7 @@ try {
   ant.unzip ( overwrite: true, src: expFile, dest: destPath )
 
 
-  (new File(destPath)).eachFile(){f ->
+  (new File(destPath)).listFiles().sort{ it.lastModified() }.each(){f ->
     println "[${getCurrent()}] import ${f}";
     String data = f.getText("UTF-8");
     doPostProcess("${solrURL}/${collectionName}/update", 60*1000, 180*1000, data);
