@@ -8,12 +8,12 @@ import java.text.SimpleDateFormat
 
 /**
  * 
- * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c core2 -m 10 -d /opt
+ * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c ${corename} -m 10 -d /opt
  *
  */
 
 //创建 CliBuilder 实例，并定义命令行选项
-def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c core2 -m 10 -d /opt',header:"Options:");
+def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c ${corename} -m 10 -d /opt',header:"Options:");
 cmdline.h( longOpt: "help", required: false, "show usage information" );
 cmdline.u( argName: "solrURL", required: true, args: 1, "solr URL" );
 cmdline.c( argName: "coreName", required: true, args: 1, "corename" );
