@@ -8,13 +8,14 @@ import java.text.SimpleDateFormat
 
 /**
  * 
- * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c ${corename} -m 10 -d /opt
+ * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10 -d /opt
  *
  */
 
 //创建 CliBuilder 实例，并定义命令行选项
-def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrExport.groovy -u "http://T1:8983/solr" -c ${corename} -m 10 -d /opt',header:"Options:");
+def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10 -d /opt',header:"Options:");
 cmdline.h( longOpt: "help", required: false, "show usage information" );
+cmdline.p( longOpt: "prettyPrint", required: false, "prettyPrint Json" );
 cmdline.u( argName: "solrURL", required: true, args: 1, "solr URL" );
 cmdline.c( argName: "coreName", required: true, args: 1, "corename" );
 cmdline.m( argName: "maxDocPerFile", required: true, args: 1, "max Documents Per File,default: 10000" );
@@ -86,7 +87,11 @@ while(true) {
   fileNumber=fileNumber+1;
   outputFilename="${destPath}/solr_export(${collectionName})-${fileNumber}.json";
   println "[${getCurrent()}] Writing file: ${outputFilename}";
-  (new File(outputFilename)).write(JsonOutput.prettyPrint(json.toString()), "UTF-8");
+  if (opt.p) {
+    (new File(outputFilename)).write(JsonOutput.prettyPrint(json.toString()), "UTF-8");
+  } else {
+    (new File(outputFilename)).write(json.toString(), "UTF-8");
+  }
 }
 
 //打包压缩

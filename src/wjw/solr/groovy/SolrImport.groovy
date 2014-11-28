@@ -4,12 +4,12 @@ import java.text.SimpleDateFormat
 
 /**
  * 
- * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrImport.groovy -u "http://T1:8983/solr" -c ${corename} -f "/opt/solr_export(${corename})-2014-11-04_14-52-16.zip"
+ * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrImport.groovy -u "http://${ip}:8983/solr" -c ${corename} -f "/opt/solr_export(${corename})-2014-11-04_14-52-16.zip"
  *
  */
 
 //创建 CliBuilder 实例，并定义命令行选项
-def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrImport.groovy -u "http://T1:8983/solr" -c ${corename} -f "/opt/solr_export(${corename})-2014-11-04_14-52-16.zip"',header:"Options:");
+def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrImport.groovy -u "http://${ip}:8983/solr" -c ${corename} -f "/opt/solr_export(${corename})-2014-11-04_14-52-16.zip"',header:"Options:");
 cmdline.h( longOpt: "help", required: false, "show usage information" );
 cmdline.u( argName: "solrURL", required: true, args: 1, "solr URL" );
 cmdline.c( argName: "coreName", required: true, args: 1, "core name" );
