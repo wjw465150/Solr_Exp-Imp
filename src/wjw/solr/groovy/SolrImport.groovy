@@ -1,5 +1,7 @@
 package wjw.solr.groovy
 
+import groovy.json.JsonSlurper
+
 import java.text.SimpleDateFormat
 
 /**
@@ -24,6 +26,10 @@ if (opt.h) {
 
 //将命令行选项赋值给变量
 def solrURL=opt.u;
+if(solrURL.endsWith("/")) {
+  solrURL = solrURL.substring(0, solrURL.length()-1);
+}
+
 def collectionName=opt.c;
 def expFile = opt.f;
 expFile = (new File(expFile)).canonicalPath;
@@ -35,6 +41,10 @@ try {
   println "solr import start..."
   println "solrUrl: ${solrURL} coreName: ${collectionName} exportFile: ${expFile}";
 
+  String[] urls=getClusterUrls(solrURL,collectionName);
+  println "Nodes Count:${urls.size()},Nodes:";
+  urls.each { it -> println it; }
+  
   def ant = new AntBuilder();
   //解压
   ant.echo("UnZip ${expFile} to ${destPath}");
@@ -136,4 +146,21 @@ private String doPostProcess(String urlstr, int connectTimeout, int readTimeout,
     }
   }
 
+}
+
+private String[] getClusterUrls(String solrURL,String coreName) {
+  java.util.List<String> urls = new java.util.ArrayList<String>();
+
+  def clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL();
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000]);
+  def data = new JsonSlurper().parseText(status)."znode"."data";
+
+  def shards = new JsonSlurper().parseText(data)."${coreName}"."shards";
+  shards.each { key,value ->
+    value["replicas"].each {key1,value1 ->
+      urls.add(value1["base_url"]);
+    };
+  };
+
+  return urls.toArray(new String[0]);
 }

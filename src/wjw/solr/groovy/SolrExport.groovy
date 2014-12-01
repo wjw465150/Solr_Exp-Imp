@@ -34,6 +34,9 @@ def query="*%3A*";
 
 //将命令行选项赋值给变量
 def solrURL=opt.u;
+if(solrURL.endsWith("/")) {
+  solrURL = solrURL.substring(0, solrURL.length()-1);
+}
 def collectionName=opt.c;
 
 long maxDocPerFile=10000;
@@ -50,6 +53,11 @@ destPath = (new File(destPath)).canonicalPath;
 //开始获取
 println "solr export start..."
 println "solrUrl: ${solrURL} coreName: ${collectionName} maxDocPerFile: ${maxDocPerFile}";
+
+String[] urls=getClusterUrls(solrURL,collectionName);
+println "Nodes Count:${urls.size()},Nodes:";
+urls.each { it -> println it; }
+//return 0;
 
 def maxDocsUrl = "${solrURL}/${collectionName}/select?wt=json&q=${query}&rows=0".toURL();
 def status = maxDocsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
@@ -110,3 +118,21 @@ ant.echo("Zip solr_export(${collectionName})-*.* files finished!");
 private String getCurrent() {
   return (new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")).format(new java.util.Date())
 }
+
+private String[] getClusterUrls(String solrURL,String coreName) {
+  java.util.List<String> urls = new java.util.ArrayList<String>();
+
+  def clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL();
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000]);
+  def data = new JsonSlurper().parseText(status)."znode"."data";
+
+  def shards = new JsonSlurper().parseText(data)."${coreName}"."shards";
+  shards.each { key,value ->
+    value["replicas"].each {key1,value1 ->
+      urls.add(value1["base_url"]);
+    };
+  };
+
+  return urls.toArray(new String[0]);
+}
+
