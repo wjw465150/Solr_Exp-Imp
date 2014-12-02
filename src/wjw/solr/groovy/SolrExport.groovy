@@ -3,6 +3,7 @@ package wjw.solr.groovy
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
 
 import java.text.SimpleDateFormat
 
@@ -78,6 +79,7 @@ while(true) {
     docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
     status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
   } catch(Exception ex) {
+    println ex.getMessage();
     for(int i=0;i<nodeUrls.length;i++) {
       try {
         baseDocsUrl = "${nodeUrls[i]}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
@@ -85,7 +87,7 @@ while(true) {
         status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
         break;
       } catch(Exception ex2) {
-        //
+        println ex2.getMessage();
       }
     }
   }
@@ -134,6 +136,9 @@ ant.delete() {
 }
 ant.echo("Zip solr_export(${collectionName})-*.* files finished!");
 
+///////////////////////////////////////////////////////////////////////////////////
+
+@CompileStatic
 private String getCurrent() {
   return (new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")).format(new java.util.Date())
 }
@@ -155,4 +160,4 @@ private String[] getClusterUrls(String solrURL,String coreName) {
   return urls.toArray(new String[0]);
 }
 
- 
+

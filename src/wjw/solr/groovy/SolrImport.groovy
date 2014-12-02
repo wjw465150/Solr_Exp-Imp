@@ -1,6 +1,7 @@
 package wjw.solr.groovy
 
 import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
 
 import java.text.SimpleDateFormat
 
@@ -44,18 +45,38 @@ try {
   String[] nodeUrls=getClusterUrls(solrURL,collectionName);
   println "Nodes Count:${nodeUrls.size()},Nodes:";
   nodeUrls.each { it -> println "\t ${it}"; }
-  
+
   def ant = new AntBuilder();
   //解压
   ant.echo("UnZip ${expFile} to ${destPath}");
   ant.unzip ( overwrite: true, src: expFile, dest: destPath )
 
 
+  int nodePos=0;
   (new File(destPath)).listFiles().sort{ it.lastModified() }.each(){f ->
-    println "[${getCurrent()}] import ${f}";
     String data = f.getText("UTF-8");
-    doPostProcess("${solrURL}/${collectionName}/update", 60*1000, 180*1000, data);
-    doPostProcess("${solrURL}/${collectionName}/update", 60*1000, 180*1000, '{"commit": {"softCommit": false}}');
+    try {
+      println "[${getCurrent()}] Use Node: ${nodeUrls[nodePos]}, import ${f}";
+      doPostProcess("${nodeUrls[nodePos]}/${collectionName}/update", 60*1000, 180*1000, data);
+      doPostProcess("${nodeUrls[nodePos]}/${collectionName}/update", 60*1000, 180*1000, '{"commit": {"softCommit": false}}');
+
+      nodePos++;
+      if(nodePos>(nodeUrls.length-1)) {
+        nodePos=0;
+      }
+    } catch(Exception ex) {
+      println ex.getMessage();
+      for(int i=0;i<nodeUrls.length;i++) {
+        try {
+          println "[${getCurrent()}] Use Node: ${nodeUrls[i]}, import ${f}";
+          doPostProcess("${nodeUrls[i]}/${collectionName}/update", 60*1000, 180*1000, data);
+          doPostProcess("${nodeUrls[i]}/${collectionName}/update", 60*1000, 180*1000, '{"commit": {"softCommit": false}}');
+          break;
+        } catch(Exception ex2) {
+          println ex2.getMessage();
+        }
+      }
+    }
   }
 
   println "solr import finished!"
@@ -64,6 +85,7 @@ try {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
+@CompileStatic
 private String getCurrent() {
   return (new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")).format(new java.util.Date())
 }
@@ -83,6 +105,7 @@ private String getCurrent() {
  * @return 服务器的返回信息
  * @throws IOException
  */
+@CompileStatic
 private String doPostProcess(String urlstr, int connectTimeout, int readTimeout, String data) throws IOException {
   String UTF_8 = "UTF-8"; //HTTP请求字符集
 
