@@ -54,10 +54,9 @@ destPath = (new File(destPath)).canonicalPath;
 println "solr export start..."
 println "solrUrl: ${solrURL} coreName: ${collectionName} maxDocPerFile: ${maxDocPerFile}";
 
-String[] urls=getClusterUrls(solrURL,collectionName);
-println "Nodes Count:${urls.size()},Nodes:";
-urls.each { it -> println it; }
-//return 0;
+String[] nodeUrls=getClusterUrls(solrURL,collectionName);
+println "Nodes Count:${nodeUrls.size()},Nodes:";
+nodeUrls.each { it -> println "\t ${it}"; }
 
 def maxDocsUrl = "${solrURL}/${collectionName}/select?wt=json&q=${query}&rows=0".toURL();
 def status = maxDocsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
@@ -68,14 +67,29 @@ println "maxDocs: ${maxDocs}";
 String cursorMark="*";
 long fileNumber=0;
 String outputFilename="";
-String baseDocsUrl = "${solrURL}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
 
 def docsUrl;
 def jsonStatus;
 def docs;
+int nodePos=0;
 while(true) {
-  docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
-  status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+  String baseDocsUrl = "${nodeUrls[nodePos]}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
+  try {
+    docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
+    status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+  } catch(Exception ex) {
+    for(int i=0;i<nodeUrls.length;i++) {
+      try {
+        baseDocsUrl = "${nodeUrls[i]}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
+        docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
+        status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+        break;
+      } catch(Exception ex2) {
+        //
+      }
+    }
+  }
+
   jsonStatus = new JsonSlurper().parseText(status);
   cursorMark = jsonStatus."nextCursorMark";
   docs = jsonStatus."response"."docs";
@@ -94,11 +108,16 @@ while(true) {
 
   fileNumber=fileNumber+1;
   outputFilename="${destPath}/solr_export(${collectionName})-${fileNumber}.json";
-  println "[${getCurrent()}] Writing file: ${outputFilename}";
+  println "[${getCurrent()}] Use Node: ${nodeUrls[nodePos-1]}, Writing file: ${outputFilename}";
   if (opt.p) {
     (new File(outputFilename)).write(JsonOutput.prettyPrint(json.toString()), "UTF-8");
   } else {
     (new File(outputFilename)).write(json.toString(), "UTF-8");
+  }
+
+  nodePos++;
+  if(nodePos>(nodeUrls.length-1)) {
+    nodePos=0;
   }
 }
 
@@ -136,3 +155,4 @@ private String[] getClusterUrls(String solrURL,String coreName) {
   return urls.toArray(new String[0]);
 }
 
+ 

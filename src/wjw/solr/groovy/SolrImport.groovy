@@ -41,9 +41,9 @@ try {
   println "solr import start..."
   println "solrUrl: ${solrURL} coreName: ${collectionName} exportFile: ${expFile}";
 
-  String[] urls=getClusterUrls(solrURL,collectionName);
-  println "Nodes Count:${urls.size()},Nodes:";
-  urls.each { it -> println it; }
+  String[] nodeUrls=getClusterUrls(solrURL,collectionName);
+  println "Nodes Count:${nodeUrls.size()},Nodes:";
+  nodeUrls.each { it -> println "\t ${it}"; }
   
   def ant = new AntBuilder();
   //解压
