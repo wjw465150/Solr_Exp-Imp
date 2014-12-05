@@ -128,7 +128,7 @@ def destFile="${destPath}/solr_export(${collectionName})-"+getCurrent()+".zip";
 def ant = new AntBuilder();
 ant.echo("Zip solr_export(${collectionName})-*.* files start...");
 ant.zip( destfile: destFile, compress: true ) {
-  fileset( dir: destPath, includes: "solr_export(${collectionName})-*.*" )
+  fileset( dir: destPath, includes: "solr_export(${collectionName})-*.json" )
 }
 
 ant.delete() {
