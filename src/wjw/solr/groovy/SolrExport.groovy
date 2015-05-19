@@ -60,7 +60,7 @@ println "Nodes Count:${nodeUrls.size()},Nodes:";
 nodeUrls.each { it -> println "\t ${it}"; }
 
 def maxDocsUrl = "${solrURL}/${collectionName}/select?wt=json&q=${query}&rows=0".toURL();
-def status = maxDocsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+def status = maxDocsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000],"UTF-8");
 long maxDocs = new JsonSlurper().parseText(status)."response"."numFound";
 println "maxDocs: ${maxDocs}";
 
@@ -77,14 +77,14 @@ while(true) {
   String baseDocsUrl = "${nodeUrls[nodePos]}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
   try {
     docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
-    status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+    status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000],"UTF-8");
   } catch(Exception ex) {
     println ex.getMessage();
     for(int i=0;i<nodeUrls.length;i++) {
       try {
         baseDocsUrl = "${nodeUrls[i]}/${collectionName}/select?wt=json&indent=false&sort=id+asc&q=${query}&fl=${fieldNames}&rows=${maxDocPerFile}";
         docsUrl = (baseDocsUrl+"&cursorMark=${cursorMark}").toURL();
-        status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000]);
+        status = docsUrl.getText(["connectTimeout":60*1000,"readTimeout":60*1000],"UTF-8");
         break;
       } catch(Exception ex2) {
         println ex2.getMessage();
@@ -147,7 +147,7 @@ private String[] getClusterUrls(String solrURL,String coreName) {
   java.util.List<String> urls = new java.util.ArrayList<String>();
 
   def clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL();
-  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000]);
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000],"UTF-8");
   def data = new JsonSlurper().parseText(status)."znode"."data";
 
   def shards = new JsonSlurper().parseText(data)."${coreName}"."shards";

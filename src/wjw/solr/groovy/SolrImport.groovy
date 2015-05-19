@@ -175,7 +175,7 @@ private String[] getClusterUrls(String solrURL,String coreName) {
   java.util.List<String> urls = new java.util.ArrayList<String>();
 
   def clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL();
-  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000]);
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000],"UTF-8");
   def data = new JsonSlurper().parseText(status)."znode"."data";
 
   def shards = new JsonSlurper().parseText(data)."${coreName}"."shards";
