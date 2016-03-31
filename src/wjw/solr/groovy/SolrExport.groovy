@@ -9,12 +9,12 @@ import java.text.SimpleDateFormat
 
 /**
  * 
- * 用法: /data/app/groovy/bin/groovy /data/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10 -d /opt
+ * 用法: /opt/app/groovy/bin/groovy /opt/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10000 -d /opt
  *
  */
 
 //创建 CliBuilder 实例，并定义命令行选项
-def cmdline = new CliBuilder(width: 200, usage: 'groovy /data/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10 -d /opt',header:"Options:");
+def cmdline = new CliBuilder(width: 200, usage: 'groovy /opt/app/groovy/script/SolrExport.groovy -u "http://${ip}:8983/solr" -c ${corename} -m 10000 -d /opt',header:"Options:");
 cmdline.h( longOpt: "help", required: false, "show usage information" );
 cmdline.p( longOpt: "prettyPrint", required: false, "prettyPrint Json" );
 cmdline.u( argName: "solrURL", required: true, args: 1, "solr URL" );
@@ -31,7 +31,7 @@ if (opt.h) {
 
 def fieldNames="*";
 //this must be URL encoded. *%3A* is the equivalent of a full search using *:*
-def query="*%3A*";
+def query=URLEncoder.encode($/*:*/$,"utf-8");
 
 //将命令行选项赋值给变量
 def solrURL=opt.u;
@@ -144,20 +144,33 @@ private String getCurrent() {
 }
 
 private String[] getClusterUrls(String solrURL,String coreName) {
-  java.util.List<String> urls = new java.util.ArrayList<String>();
+  java.util.List<String> urls = new java.util.ArrayList<String>()
 
-  def clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL();
-  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000],"UTF-8");
-  def data = new JsonSlurper().parseText(status)."znode"."data";
+  int solrVersion=getSolrVersion(solrURL)
+  def clusterUrl = null
+  if(solrVersion>4) {
+    clusterUrl = "${solrURL}/admin/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph&_=${System.currentTimeMillis()}".toURL()
+  } else {
+    clusterUrl = "${solrURL}/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&_=${System.currentTimeMillis()}".toURL()
+  }
+  
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000],"UTF-8")
+  def data = new JsonSlurper().parseText(status)."znode"."data"
 
-  def shards = new JsonSlurper().parseText(data)."${coreName}"."shards";
+  def shards = new JsonSlurper().parseText(data)."${coreName}"."shards"
   shards.each { key,value ->
     value["replicas"].each {key1,value1 ->
-      urls.add(value1["base_url"]);
-    };
-  };
+      urls.add(value1["base_url"])
+    }
+  }
 
-  return urls.toArray(new String[0]);
+  return urls.toArray(new String[0])
 }
 
+private int getSolrVersion(String solrURL) {
+  def clusterUrl = "${solrURL}/admin/info/system?wt=json&_=${System.currentTimeMillis()}".toURL()
+  def status = clusterUrl.getText(["connectTimeout":120*1000,"readTimeout":120*1000],"UTF-8")
+  def data = new JsonSlurper().parseText(status)."lucene"."solr-spec-version"
 
+  return Integer.parseInt(data[0])
+}
